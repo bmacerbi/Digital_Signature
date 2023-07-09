@@ -11,6 +11,8 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
+import binascii
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 class Client:
     def __init__(self, broker_adress, min_clients):
@@ -25,6 +27,7 @@ class Client:
 
         self.pb_keys = {}
         self.clients_list = []
+        self.votes= {}
 
     def __init_broker(self):
         self.mqtt_client.on_message = self.on_message
@@ -52,17 +55,35 @@ class Client:
     def on_message(self, client, userdata, msg):
         topic = msg.topic
         payload = msg.payload.decode("utf-8")
+        data = json.loads(payload)
 
         if topic == "sd/init":
-            cid = json.loads(payload)['cid']
+            cid = data['cid']
             if cid != self.cid and self.__new_cid(cid):
                 self.clients_list.append(cid)
 
         elif topic == "sd/pubkey":
-            data = json.loads(payload)
             cid = data['cid']
             if cid != self.cid and self.__new_key(cid):
                 self.pb_keys[cid] = data['key']
+
+        elif topic == "sd/ElectionMsg":
+            cid = data['cid']
+            if cid != self.cid and self.__new_vote(cid):
+                vote = data['vote']
+                signature = data['signature']
+                # print(data)
+
+                key_bytes = binascii.unhexlify(self.pb_keys[cid])
+                public_key = load_pem_public_key(
+                    key_bytes
+                )
+
+                if self.verify_signature(public_key, bytes(vote), signature.encode()):
+                    self.votes[cid] = vote
+                    print("foi")
+                else:
+                    print("nao foi")
 
     def __new_cid(self, cid):
         for know_cid in self.clients_list:
@@ -75,12 +96,17 @@ class Client:
             return False
         return True
     
+    def __new_vote(self, cid):
+        if cid in self.votes:
+            return False
+        return True
+    
     def publish_cid(self):
+        msg = {
+            'cid': self.cid,
+        }
         while True:
             print("Enviando CID...")
-            msg = {
-                'cid': self.cid,
-            }
             self.mqtt_client.publish("sd/init", json.dumps(msg))
             time.sleep(1)
             if len(self.clients_list) == self.min_clients - 1:
@@ -91,22 +117,38 @@ class Client:
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
+        msg = {
+            'cid': self.cid,
+            'key': public_key_bytes.hex() 
+        }
 
         while True:
             print("Publicando chave publica...")
-            msg = {
-                'cid': self.cid,
-                'key': public_key_bytes.hex() 
-            }
             self.mqtt_client.publish("sd/pubkey", json.dumps(msg))
             time.sleep(1)
             if len(self.pb_keys) == self.min_clients - 1:
                 break
 
     def vote(self):
+        vote = random.randint(0, 65335)
+        self.votes[self.cid] = vote
+        signature = self.sign_message(self.private_key, bytes(vote))
+        msg = {
+            'cid': self.cid,
+            'vote': vote,
+            'signature': signature.hex()
+        }
+
+        while True:
+            self.mqtt_client.publish("sd/ElectionMsg", json.dumps(msg))
+            
+            time.sleep(5)
+            if len(self.votes) == self.min_clients:
+                break
+
         print()
         
-    def sign_message(private_key, message):
+    def sign_message(self, private_key, message):
         signature = private_key.sign(
             message,
             padding.PSS(
@@ -117,7 +159,7 @@ class Client:
         )
         return signature
 
-    def verify_signature(public_key, message, signature):
+    def verify_signature(self, public_key, message, signature):
         try:
             public_key.verify(
                 signature,
@@ -143,4 +185,5 @@ if __name__ == "__main__":
     client.publish_key()
     client.vote()
 
-    print(client.pb_keys)
+    print(client.votes)
+
