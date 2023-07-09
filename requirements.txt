@@ -1,0 +1,2 @@
+cryptography==3.4.8
+paho_mqtt==1.6.1
