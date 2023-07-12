@@ -5,6 +5,7 @@ import string
 from aux import sign_message, verify_signature
 import binascii
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+import os
 
 class Miner():
     def __init__(self, broker_adress, id, mqtt_client, private_key, controller_key):
@@ -36,6 +37,7 @@ class Miner():
             msg = data['challenge']
             sig = data['signature']
             if verify_signature(controller_key, bytes(msg), binascii.unhexlify(sig)):
+                os.system("clear")
                 print(f"Miner {self.id}: Desafio de dificuldade {data['challenge']} recebido, procurando uma resposta...")
 
                 solution = self.__lookForAnswer(data['challenge'])
@@ -90,6 +92,7 @@ class Miner():
             msg = data['code']
             if verify_signature(controller_key, bytes(msg), binascii.unhexlify(sig)):
                 if msg == 1:
+                    print("Finalizando Minerador.")
                     self.life = False
 
     def __lookForAnswer(self, challenger):
