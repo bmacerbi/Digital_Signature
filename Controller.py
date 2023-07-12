@@ -59,7 +59,7 @@ class Controller():
                         "TransactionID": transactionId, 
                         "Solution": self.transactions[transactionId]['solution'],
                         "Result": 0,
-                        "signature": signature})
+                        "signature": signature.hex()})
                     self.mqtt_miner.publish(f"sd/{data['ClientID']}/result", result_payload)
     
     def __validSolution(self, transactionId, solution):
