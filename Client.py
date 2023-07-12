@@ -26,7 +26,7 @@ class Client:
         self.pb_keys = {}
         self.clients_list = []
         self.votes= {}
-        self.controllerId = - 1
+        self.controller_id = - 1
 
     def __init_broker(self):
         self.mqtt_client.on_message = self.on_message
@@ -151,15 +151,15 @@ class Client:
                 winnerId = cid
                 winnerVote = self.votes[cid]
 
-        self.controllerId = winnerId
+        self.controller_id = winnerId
         print(f"Tabela de Votos: {self.votes} // Vencedor: {winnerId}/{winnerVote}")
 
     def runMinerSystem(self):
-        if self.cid == self.controllerId:
+        if self.cid == self.controller_id:
             controller = Controller(self.broker_adress, self.mqtt_client, self.pb_keys, self.private_key)
             controller.runController()
         else: 
-            miner = Miner(self.broker_adress, self.cid, self.mqtt_client, self.private_key, self.pb_keys[self.controllerId])
+            miner = Miner(self.broker_adress, self.cid, self.mqtt_client, self.private_key, self.pb_keys[self.controller_id])
             miner.runMiner()
 
 
