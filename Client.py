@@ -6,13 +6,11 @@ import paho.mqtt.client as mqtt
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
 import binascii
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from Controller import Controller
+from Miner import Miner
+from aux import sign_message, verify_signature
 
 class Client:
     def __init__(self, broker_adress, min_clients):
@@ -28,6 +26,7 @@ class Client:
         self.pb_keys = {}
         self.clients_list = []
         self.votes= {}
+        self.controllerId = - 1
 
     def __init_broker(self):
         self.mqtt_client.on_message = self.on_message
@@ -72,18 +71,14 @@ class Client:
             if cid != self.cid and self.__new_vote(cid):
                 vote = data['vote']
                 signature = data['signature']
-                # print(data)
 
                 key_bytes = binascii.unhexlify(self.pb_keys[cid])
                 public_key = load_pem_public_key(
                     key_bytes
                 )
 
-                if self.verify_signature(public_key, bytes(vote), signature.encode()):
+                if verify_signature(public_key, bytes(vote), binascii.unhexlify(signature)):
                     self.votes[cid] = vote
-                    print("foi")
-                else:
-                    print("nao foi")
 
     def __new_cid(self, cid):
         for know_cid in self.clients_list:
@@ -132,7 +127,7 @@ class Client:
     def vote(self):
         vote = random.randint(0, 65335)
         self.votes[self.cid] = vote
-        signature = self.sign_message(self.private_key, bytes(vote))
+        signature = sign_message(self.private_key, bytes(vote))
         msg = {
             'cid': self.cid,
             'vote': vote,
@@ -142,37 +137,30 @@ class Client:
         while True:
             self.mqtt_client.publish("sd/ElectionMsg", json.dumps(msg))
             
-            time.sleep(5)
+            time.sleep(1)
             if len(self.votes) == self.min_clients:
                 break
+        self.setWinner()
 
-        print()
-        
-    def sign_message(self, private_key, message):
-        signature = private_key.sign(
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-        return signature
+    def setWinner(self):
+        winnerId = -1
+        winnerVote = -1
 
-    def verify_signature(self, public_key, message, signature):
-        try:
-            public_key.verify(
-                signature,
-                message,
-                padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                hashes.SHA256()
-            )
-            return True
-        except InvalidSignature:
-            return False
+        for cid in self.votes:
+            if self.votes[cid] > winnerVote:
+                winnerId = cid
+                winnerVote = self.votes[cid]
+
+        self.controllerId = winnerId
+        print(f"Tabela de Votos: {self.votes} // Vencedor: {winnerId}/{winnerVote}")
+
+    def runMinerSystem(self):
+        if self.cid == self.controllerId:
+            controller = Controller(self.broker_adress, self.mqtt_client, self.pb_keys, self.private_key)
+            controller.runController()
+        else: 
+            miner = Miner(self.broker_adress, self.cid, self.mqtt_client, self.private_key, self.pb_keys[self.controllerId])
+            miner.runMiner()
 
 
 if __name__ == "__main__":
@@ -184,6 +172,5 @@ if __name__ == "__main__":
     client.publish_cid()
     client.publish_key()
     client.vote()
-
-    print(client.votes)
+    client.runMinerSystem()
 
