@@ -2,7 +2,7 @@ import random
 import hashlib
 import json
 import string
-from aux import sign_message, verify_signature
+from signature import sign_message, verify_signature
 import binascii
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 import os

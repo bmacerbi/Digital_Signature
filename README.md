@@ -65,7 +65,7 @@ Ao se conectar, o minerador se increve nos tópicos **"sd/challenge"** e **"sd/{
 
 Ao receber uma mensagem de desafio, o minerador busca uma solução válida para ele, e ao encontrar, publica-a no tópico **"sd/solution"**. Caso a mensagem recebida seja de resultados, o minerador recebe o resultado de sua solução enviada e atualiza sua tabela de transações de acordo com as informações retornadas.
 
-### **aux.py**
+### **signature.py**
 
 Nesse arquivo auxiliar estão contidas as funções para gerar a assinatura de uma mensagens e para realizar a futura validação. Os métodos estão definidos, respectivamente, como **sign_message()** e **verify_signature()**
 

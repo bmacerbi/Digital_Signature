@@ -10,7 +10,7 @@ import binascii
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from Controller import Controller
 from Miner import Miner
-from aux import sign_message, verify_signature
+from signature import sign_message, verify_signature
 
 class Client:
     def __init__(self, broker_adress, min_clients):
