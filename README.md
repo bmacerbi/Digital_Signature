@@ -74,20 +74,22 @@ Nesse arquivo auxiliar estão contidas as funções para gerar a assinatura de u
 
 Para demonstrarmos alguns resultados da aplicação, resolvemos executar um ambiente com **4** clientes e um broker local. A partir daí, iremos exibir o comportamento do sistema, visto que aplicações gráficas não se encaixam bem nesse contexto.
 
-Podemos dividir a execução do sistema em dois estágios, eleição e mineração. No primeiro momento os processos irão realizar compartilhar seus ID's e suas chaves públicas para, em sequencia, iniciar-se o processo de votação para eleger um cliente controlador, podemos visualizar o resultado dessa votação na **Imagem 1**, onde cada cliente irá exibir uma lista com os votos de todos os participantes, nota-se também as mensagem de assinatura validada, que referen-se aos votos recebidos para cada cliente presente. Tais votos são computados e o **ID** com mais pontos é eleito o controlador. Vale destacar que as publicações do ID e da chave pública acontecem repetidamente, com um intervalo de 1 segundo, até que o valor mínimo de clientes seja atingido. 
+Podemos dividir a execução do sistema em dois estágios, eleição e mineração. No primeiro momento os processos irão realizar compartilhar seus ID's e suas chaves públicas para, em sequencia, iniciar-se o processo de votação para eleger um cliente controlador, podemos visualizar o resultado dessa votação na **Imagem 1**, onde cada cliente irá exibir uma lista com os votos de todos os participantes, nota-se também as mensagem de assinatura validada, que referem-se aos votos recebidos para cada cliente presente. Tais votos são computados e o **ID** com mais pontos é eleito o controlador. Vale destacar que as publicações do **ID** e da chave pública acontecem repetidamente, com um intervalo de 1 segundo, até que o valor mínimo de clientes seja atingido. 
 
 > ![Imagem 1](results/eleicao.png)
 
-Visualiza-se no exemplo acima a exibição dessas listas, onde cada elemento o voto de um cliente, sendo o primeiro número o **ID** do **votante** e o segundo voto gerado.
-### CONTINUAR AQUI
-Prosseguimos agora para o segundo estado do sistema, a mineração, exibido na **imagem 2**. Visualizamos a primeira ação sendo do controlador, que é a exibição da tabela de desafios, nesse caso contendo **1** desafio de dificuldade **19**. Em sequência os mineradores irão receber a mensagem e iniciar a busca por uma solução.
+Visualiza-se no exemplo acima a exibição da lista de votos, onde cada elemento representa o voto de um cliente, sendo o primeiro número o **ID** do **votante** e o segundo voto gerado.
 
-Quando o desafio é solucionado, o controlador exibe a tabela atualizada com a solução enviada e o ID do vencedor. Nesse caso o ID que primeiro solucionou o problema foi o cliente **8363**, com a respota **eaTKaDJRV9**. Em sequência, publica-se a mensagem que o desafio foi solucionado e os mineradores irão atualizar as suas tabelas própias, contabilizando uma vitória ou uma derrota. 
+Após o término da eleição, prosseguimos para o próximo estado do sistema, a mineração. Visualiza-se na **imagem 2** um exemplo de um estado da mineiração, onde o controlador gerou um desafio de dificuldade **20**, enviando-o aos mineradores.
+
+Os mineradores, ao receberem uma mensagem de desafio, validam a assinatura dela com a chuve pública do controlador e, caso seja válida, inicia-se a procura por uma solução.
+
+Com a solução em mãos, o minerador a envia para o controlador que irá validar a assinatura e validar a solução, retornando se ela foi aceita ou não. Por fim o minerador exibe a mensagem recebida e atualiza/printa a tabela local de desafios.
 
 > ![Imagem 2](results/mineracao.png)
 
-A partir desse estágio, podemos prosseguir postando mais desafios ou sair da aplicação com o caractere 'e'.
+A partir desse estágio, podemos prosseguir postando mais desafios ou sair da aplicação com o caractere 'e' dentro do controlador.
 
 ## **Conclusão**
 
-A partir dos testes e resultados observados, foi possível concluir que o sistema de comunicação indireta por meio de Publish/Subscribe funcionou como esperado. A publicação e recebimento de mensagens por filas ocorreu de forma correta entre os clientes, controlador e mineradores, permitindo assim o funcionamento eficaz das etapas de votação e mineração, como explicado na análise de testes e resultados.
+A partir dos testes e resultados observados, foi possível visualizar a validação das mensagens de todos os participantes a cada interação sendo posta em prática, com resultados satisfatórios.
