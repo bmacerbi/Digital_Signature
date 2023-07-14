@@ -118,7 +118,7 @@ class Client:
         }
 
         while True:
-            print("Publicando chave publica...")
+            print("Publicando chave pública...")
             self.mqtt_client.publish("sd/pubkey", json.dumps(msg))
             time.sleep(1)
             if len(self.pb_keys) == self.min_clients - 1:
